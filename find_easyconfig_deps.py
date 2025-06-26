@@ -40,14 +40,15 @@ def get_toolchain(file_path):
     and returns its value.
 
     The toolchain is expected to be on a line like:
-    toolchain = ('foss', '2023b')
+    toolchain = {'name': 'foss', 'version': '2023b'}
 
     Args:
         file_path (str): The path to the EasyConfig file.
 
     Returns:
-        str: The string representation of the toolchain value (e.g., "('foss', '2023b')"),
-             or None if the file does not exist or toolchain is not found.
+        str: The string representation of the toolchain value 
+             (e.g., "{'name': 'foss', 'version': '2023b'}"), or None if the file
+             does not exist or toolchain is not found.
     """
     if not os.path.exists(file_path):
         print(f"Error: file not found at '{file_path}'")
@@ -96,9 +97,9 @@ def parse_easyconfig_list_property(file_path, property_name):
                              (e.g., 'dependencies', 'builddependencies').
 
     Returns:
-        list: A list of tuples (or other Python literals), or an empty list if
-              the property is not found or is empty.
-              Returns None if the file does not exist or a parsing error occurs.
+       list: A list of strings or an empty list if the property is not found or
+             is empty. Returns None if the file does not exist or a parsing 
+             error occurs.
     """
     if not os.path.exists(file_path):
         print(f"Error: File not found at '{file_path}'")
@@ -221,7 +222,8 @@ def get_toolchain_version(tc_string):
         if isinstance(parsed_tc, dict) and 'version' in parsed_tc:
             return parsed_tc['version']
         else:
-            print(f"Warning: Unexpected toolchain format: {tc_string}. Returning original string.")
+            print(
+                f"Warning: Unexpected toolchain format: {tc_string}. Returning original string.")
             return tc_string
 
 
@@ -266,7 +268,7 @@ def return_matched_items(items_list, pattern):
         pattern (str): The substring pattern to search for.
 
     Returns:
-        list: A list of items from items_list that contain the pattern.
+       list: A list of items from items_list that contain the pattern.
     """
     result = [item for item in items_list if pattern in item]
     return result
@@ -282,18 +284,18 @@ def get_compatible_dependency(toolchain, deps):
         deps (list): A list of dependency tuples, e.g., [('Python', '3.10.4')].
 
     Returns:
-        list: A list of strings representing the compatible EasyBuild modules found.
-              Returns an empty list if no matches are found or an error occurs.
+       list: A list of strings representing the compatible EasyBuild modules found.
+             Returns an empty list if no matches are found or an error occurs.
     """
     tc_version = get_toolchain_version(toolchain)
     print(f"Toolchain version for search: {tc_version}")
 
     # Get toolchain compatible GCC version or EasyBuild version
     alt_version = None
-    if re.match(r"\d{4}[abc]", tc_version): # e.g., 2023a, 2024b
+    if re.match(r"\d{4}[abc]", tc_version):  # e.g., 2023a, 2024b
         alt_version = toolchain_table.get(tc_version)
         print(f"Alternate GCC version: {alt_version}")
-    elif re.match(r"\d+\.\d+\.\d+", tc_version): # e.g., 12.3.0, 13.2.0
+    elif re.match(r"\d+\.\d+\.\d", tc_version):  # e.g., 12.3.0, 13.2.0
         alt_version = gcc_table.get(tc_version)
         print(f"Alternate EasyBuild toolchain version: {alt_version}")
 
@@ -306,12 +308,14 @@ def get_compatible_dependency(toolchain, deps):
             module_name = dep[0]
             command = f"eb --search {module_name}"
             try:
-                matches += subprocess.check_output(command, shell=True, text=True, stderr=subprocess.PIPE)
+                matches += subprocess.check_output(
+                    command, shell=True, text=True, stderr=subprocess.PIPE)
             except subprocess.CalledProcessError as e:
-                print(f"Warning: 'eb --search {module_name}' failed with error: {e.stderr.strip()}")
+                print(
+                    f"Warning: 'eb --search {module_name}' failed with error: {e.stderr.strip()}")
         # Filter out header line, only when its a SYSTEM toolchain as we don't filter any further
         all_results = string_to_list(matches)
-        if len(all_results) > 1: # Assuming first line of output is a header
+        if len(all_results) > 1:  # Assuming first line of output is a header
             all_results = all_results[1:]
         return all_results
     else:
@@ -321,23 +325,28 @@ def get_compatible_dependency(toolchain, deps):
             # use `--search` to get full paths in output to indicate which repo the results are from
             command = f"eb --search {module_name}"
             try:
-                module_search_output = subprocess.check_output(command, shell=True, text=True, stderr=subprocess.PIPE)
+                module_search_output = subprocess.check_output(
+                    command, shell=True, text=True, stderr=subprocess.PIPE)
                 module_lines = string_to_list(module_search_output)
 
                 # Filter by primary toolchain version
-                results_for_module = return_matched_items(module_lines, tc_version)
+                results_for_module = return_matched_items(
+                    module_lines, tc_version)
 
                 # Filter by alternate version if available
                 if alt_version:
-                    results_for_module.extend(return_matched_items(module_lines, alt_version))
+                    results_for_module.extend(
+                        return_matched_items(module_lines, alt_version))
 
                 # we remove duplicates later, so for now just collect the results
                 all_results.extend(results_for_module)
 
             except subprocess.CalledProcessError as e:
-                print(f"Warning: 'eb --search {module_name}' failed with error: {e.stderr.strip()}")
+                print(
+                    f"Warning: '{command}' failed with error: {e.stderr.strip()}")
             except Exception as e:
-                print(f"An unexpected error occurred during search for {module_name}: {e}")
+                print(
+                    f"An unexpected error occurred during search for {module_name}: {e}")
         # use set() to remove duplicates
         return list(set(all_results))
 
@@ -357,7 +366,7 @@ def print_results(results_list):
     print("\n--- Possible compatible Modules Found ---")
     for item in results_list:
         x = item.replace("*", "").strip()
-        if x: # Only print non-empty results
+        if x:  # Only print non-empty results
             print(x)
     print(f"{len(results_list)} modules found! 🎉")
 
@@ -383,11 +392,12 @@ def print_info(ec_file_name, toolchain_str, dependencies_list, builddependencies
     print(f"Dependencies ({len(dependencies_list)}):")
     for dep in dependencies_list:
         print(f"\t- {dep}")
-    print(f"Dependency Module Names:\t {get_dependencies_list(dependencies_list)}")
+    print(
+        f"Dependency Module Names:\t {get_dependencies_list(dependencies_list)}")
     print("------------------------------------")
 
 
-if __name__ == "__main__":
+def main():
     """
     Entry point of the script.
     Parses an EasyConfig file to extract and find compatible dependencies
@@ -400,8 +410,8 @@ if __name__ == "__main__":
           # Search for compatible dependencies of 'example.eb'
           {sys.argv[0]} -i example.eb
 
-          # Search for compatible builddependencies of 'my_app.eb'
-          {sys.argv[0]} -i my_app.eb -b
+          # Search for compatible builddependencies of 'example.eb'
+          {sys.argv[0]} -i example.eb -b
         """
     )
 
@@ -413,7 +423,8 @@ if __name__ == "__main__":
         It leverages 'eb --search' to query the EasyBuild environment.
         """,
         epilog=examples,
-        formatter_class=argparse.RawDescriptionHelpFormatter # Preserves formatting of description and epilog
+        # Preserves formatting of description and epilog
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
     parser.add_argument(
@@ -444,11 +455,17 @@ if __name__ == "__main__":
     toolchain = get_toolchain(args.input_file)
     builddependencies = parse_easyconfig_list_property(
         args.input_file, 'builddependencies')
-    dependencies = parse_easyconfig_list_property(args.input_file, 'dependencies')
+    dependencies = parse_easyconfig_list_property(
+        args.input_file, 'dependencies')
 
-    print_info(os.path.basename(args.input_file), toolchain, dependencies, builddependencies)
+    print_info(os.path.basename(args.input_file),
+               toolchain, dependencies, builddependencies)
 
     if args.builddependencies:
         print_results(get_compatible_dependency(toolchain, builddependencies))
     else:
         print_results(get_compatible_dependency(toolchain, dependencies))
+
+
+if __name__ == "__main__":
+    main()
