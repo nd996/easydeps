@@ -207,20 +207,18 @@ def get_toolchain_version(tc_string):
     Extracts the version from a toolchain string.
 
     Args:
-        tc_string (str): A string representing the toolchain, e.g., "('foss', '2023b')" or "SYSTEM".
+        tc_string (str): A string representing the toolchain, e.g., "{'name': 'foss', 'version': '2023b'}" or "SYSTEM".
 
     Returns:
-        str: The toolchain version (e.g., '2023b') or 'SYSTEM'.
+        str: The toolchain version e.g., '2023b' or 'SYSTEM'.
     """
     if tc_string == 'SYSTEM':
         return tc_string
     else:
-        # Evaluate the string to a dict or tuple, and return the version string
-        # Assuming format is ('name', 'version')
+        # Evaluate the string to a dict and return the version string
+        # Assuming format is {'name': 'foss', 'version': '2023b'}
         parsed_tc = ast.literal_eval(tc_string)
-        if isinstance(parsed_tc, tuple) and len(parsed_tc) >= 2:
-            return parsed_tc[1]
-        elif isinstance(parsed_tc, dict) and 'version' in parsed_tc:
+        if isinstance(parsed_tc, dict) and 'version' in parsed_tc:
             return parsed_tc['version']
         else:
             print(f"Warning: Unexpected toolchain format: {tc_string}. Returning original string.")
@@ -311,23 +309,20 @@ def get_compatible_dependency(toolchain, deps):
                 matches += subprocess.check_output(command, shell=True, text=True, stderr=subprocess.PIPE)
             except subprocess.CalledProcessError as e:
                 print(f"Warning: 'eb --search {module_name}' failed with error: {e.stderr.strip()}")
-        # Filter out header lines if present (usually the first two lines)
+        # Filter out header line, only when its a SYSTEM toolchain as we don't filter any further
         all_results = string_to_list(matches)
-        if len(all_results) > 2: # Assuming first two lines are headers
-            all_results = all_results[2:]
+        if len(all_results) > 1: # Assuming first line of output is a header
+            all_results = all_results[1:]
         return all_results
     else:
         # Search for each dependency and filter by toolchain version
         for dep in deps:
             module_name = dep[0]
+            # use `--search` to get full paths in output to indicate which repo the results are from
             command = f"eb --search {module_name}"
             try:
                 module_search_output = subprocess.check_output(command, shell=True, text=True, stderr=subprocess.PIPE)
                 module_lines = string_to_list(module_search_output)
-
-                # Remove header lines if present
-                if len(module_lines) > 2:
-                    module_lines = module_lines[2:]
 
                 # Filter by primary toolchain version
                 results_for_module = return_matched_items(module_lines, tc_version)
@@ -336,15 +331,15 @@ def get_compatible_dependency(toolchain, deps):
                 if alt_version:
                     results_for_module.extend(return_matched_items(module_lines, alt_version))
 
-                # Add unique results for this module to the overall list
-                all_results.extend(list(set(results_for_module))) # Use set to handle duplicates from extend
+                # we remove duplicates later, so for now just collect the results
+                all_results.extend(results_for_module)
 
             except subprocess.CalledProcessError as e:
                 print(f"Warning: 'eb --search {module_name}' failed with error: {e.stderr.strip()}")
             except Exception as e:
                 print(f"An unexpected error occurred during search for {module_name}: {e}")
-
-        return all_results
+        # use set() to remove duplicates
+        return list(set(all_results))
 
 
 def print_results(results_list):
@@ -356,15 +351,15 @@ def print_results(results_list):
         results_list (list): A list of strings, where each string represents a search result.
     """
     if not results_list:
-        print("No compatible modules found.")
+        print("No compatible modules found. 😔")
         return
 
-    print("\n--- Compatible Modules Found ---")
+    print("\n--- Possible compatible Modules Found ---")
     for item in results_list:
         x = item.replace("*", "").strip()
         if x: # Only print non-empty results
             print(x)
-    print("--------------------------------")
+    print(f"{len(results_list)} modules found! 🎉")
 
 
 def print_info(ec_file_name, toolchain_str, dependencies_list, builddependencies_list):
