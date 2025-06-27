@@ -11,7 +11,6 @@ import subprocess
 import sys
 import textwrap
 
-# Need the lookup tables in both directions
 toolchain_table = {
     '2025a': '14.2.0',
     '2024a': '13.3.0',
@@ -21,16 +20,7 @@ toolchain_table = {
     '2022a': '11.3.0',
     '2021b': '11.2.0',
     '2021a': '10.3.0',
-}
-gcc_table = {
-    '14.2.0': '2025a',
-    '13.3.0': '2024a',
-    '13.2.0': '2023b',
-    '12.3.0': '2023a',
-    '12.2.0': '2022b',
-    '11.3.0': '2022a',
-    '11.2.0': '2021b',
-    '10.3.0': '2021a',
+    'SYSTEM': None,
 }
 
 
@@ -273,6 +263,25 @@ def return_matched_items(items_list, pattern):
     result = [item for item in items_list if pattern in item]
     return result
 
+def get_alt_toolchain_version(key):
+    """
+    Looks up toolchain version by name or GCC version.
+    
+    Args:
+        key (str): The toolchain string e.g. "2023b" or "13.2.0"
+
+    Returns:
+        str: A string of the corresponding toolchain version or GCC version 
+             from the lookup table.
+    """
+    if key in toolchain_table:
+        return toolchain_table[key]
+    else:
+        for toolchain_name, gcc_version in toolchain_table.items():
+            if gcc_version == key:
+                return toolchain_name
+    raise Exception(f"Error: No matching toolchain or GCC version for '{key}'")
+
 
 def get_compatible_dependency(toolchain, deps):
     """
@@ -291,13 +300,8 @@ def get_compatible_dependency(toolchain, deps):
     print(f"Toolchain version for search: {tc_version}")
 
     # Get toolchain compatible GCC version or EasyBuild version
-    alt_version = None
-    if re.match(r"\d{4}[abc]", tc_version):  # e.g., 2023a, 2024b
-        alt_version = toolchain_table.get(tc_version)
-        print(f"Alternate GCC version: {alt_version}")
-    elif re.match(r"\d+\.\d+\.\d", tc_version):  # e.g., 12.3.0, 13.2.0
-        alt_version = gcc_table.get(tc_version)
-        print(f"Alternate EasyBuild toolchain version: {alt_version}")
+    alt_version = get_alt_toolchain_version(tc_version)
+    print(f"Alternate toolchain version: {alt_version}")
 
     matches = ''
     all_results = []
@@ -462,9 +466,13 @@ def main():
                toolchain, dependencies, builddependencies)
 
     if args.builddependencies:
-        print_results(get_compatible_dependency(toolchain, builddependencies))
+        results = get_compatible_dependency(toolchain, builddependencies)
+        results.sort()
+        print_results(results)
     else:
-        print_results(get_compatible_dependency(toolchain, dependencies))
+        results = get_compatible_dependency(toolchain, dependencies)
+        results.sort()
+        print_results(results)
 
 
 if __name__ == "__main__":
