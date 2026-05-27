@@ -6,6 +6,9 @@ My attempt to write a script to help with writing EasyConfig (.eb) files. If you
 
 It parses the given EasyConfig file and finds the toolchain version and any listed dependencies and uses them to search for possibly compatible modules by leveraging the `eb --search` command. Having [EasyBuild](https://easybuild.io/) installed and any additional EasyConfig repos added to your `EASYBUILD_ROBOT_PATHS` is required. It only searches for compatible modules using the toolchain and any listed dependencies already written in the EasyConfig file, it does not search for dependencies in any other way.
 
+> *Note:*
+> The 'Python' dependency is ignores as the sting appears in so many results it was useless.
+
 ## Requirements
 - [Install EasyBuild](https://docs.easybuild.io/installation/)
 - Update your `EASYBUILD_ROBOT_PATHS` environment variable to include any additional GitHub repos containing more EasyConfig files.
