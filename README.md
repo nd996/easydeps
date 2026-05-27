@@ -18,3 +18,10 @@ To search for possible compatible dependencies:
 ```bash
 python get_available_deps.py /path/to/easyconfig.eb
 ```
+
+## BONUS
+
+To validate an EasyConfig file name, based on it's contents:
+```bash
+python ec_check_name.py /path/to/easyconfig.eb
+```

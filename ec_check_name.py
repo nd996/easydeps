@@ -1,3 +1,5 @@
+# neil.douglas@york.ac.uk
+
 import sys
 import os
 from easybuild.framework.easyconfig.easyconfig import ActiveMNS
