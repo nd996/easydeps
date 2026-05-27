@@ -12,7 +12,7 @@ TOOLCHAIN_TABLE = {
     '2024a': '13.3.0',
     '2023b': '13.2.0',
     '2023a': '12.3.0',
-    'SYSTEM': None,
+    'system': None,
 }
 
 WIDTH = 64
@@ -23,9 +23,9 @@ IGNORE_MODULES = {'Python'}
 
 def get_alt_toolchain_version(key):
     """Looks up toolchain version by name or GCC version."""
-    if key in TOOLCHAIN_TABLE:
+    if key.lower() in TOOLCHAIN_TABLE:
         return TOOLCHAIN_TABLE[key]
-    if key in REVERSE_TOOLCHAIN_TABLE:
+    if key.lower() in REVERSE_TOOLCHAIN_TABLE:
         return REVERSE_TOOLCHAIN_TABLE[key]
     raise ValueError(f"No matching toolchain or GCC version for '{key}'")
 
@@ -50,15 +50,20 @@ def print_parsed_avail_dependencies(deps, toolchain, alt_toolchain):
 
         raw_deps = get_raw_avail_dependencies(d)
 
-        # Filter items that contain the toolchain or alternative toolchain string
-        matched = [item for item in raw_deps if toolchain in item]
-        alt_matched = [item for item in raw_deps if alt_toolchain in item]
+        # If it's the system toolchain, don't filter it just dump all the results
+        if toolchain.lower() == 'system':
+            matched = raw_deps
+            header_info = f"{d} {toolchain}"
+        else:
+            # items containing toolchain OR alt_toolchain (if it exists)
+            matched = [ item for item in raw_deps if toolchain in item or (alt_toolchain and alt_toolchain in item) ]
+            header_info = f"{d} {toolchain} {alt_toolchain}"
 
         print('-' * WIDTH)
-        print(f'Results for: {d} {toolchain} {alt_toolchain}')
+        print(f'Results for: {header_info}')
         print('-' * WIDTH)
 
-        for item in matched + alt_matched:
+        for item in matched:
             print(item)
 
 def process_easyconfig(path):
@@ -86,7 +91,7 @@ def process_easyconfig(path):
     print_parsed_avail_dependencies(dependencies, toolchain_tc, toolchain_gcc)
 
     print('=' * WIDTH)
-    print('🤘 FINSISHED!!')
+    print('🏁 FINSISHED!!')
     return True
 
 if __name__ == "__main__":
