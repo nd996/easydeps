@@ -14,14 +14,14 @@ It parses the given EasyConfig file and finds the toolchain version and any list
 - Update your `EASYBUILD_ROBOT_PATHS` environment variable to include any additional GitHub repos containing more EasyConfig files.
 
 ## Example usage
-To search for possible compatible dependencies:
+First ensure EasyBuild (`eb`) is loaded and in your `PATH` then to search for possible compatible dependencies:
 ```bash
 python get_available_deps.py /path/to/easyconfig.eb
 ```
 
 ## BONUS
 
-To validate an EasyConfig file name, based on it's contents:
+To validate an EasyConfig file name (with EasyBuild loaded), based on its contents:
 ```bash
 python ec_check_name.py /path/to/easyconfig.eb
 ```
