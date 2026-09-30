@@ -8,8 +8,6 @@ from easybuild.tools.options import set_up_configuration
 
 def validate(path):
     try:
-        set_up_configuration()
-
         # Parse the EasyConfig file but don't validate it
         ec = EasyConfig(path, validate=False)
 
@@ -39,6 +37,8 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python validate_eb.py <path_to_eb_file>")
         sys.exit(1)
+
+    set_up_configuration()
 
     files = sys.argv[1:]
     results = [validate(f) for f in files]
